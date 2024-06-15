@@ -49,11 +49,10 @@ const verifyToken = (req, res, next) => {
 
 app.get("/api/ip", verifyToken, async (req, res) => {
   try {
-    // Fetch IP address and geo information
-    const ipResponse = await axios.get("https://api.ipify.org?format=json");
-    const ipData = ipResponse.data;
-
-    const geoResponse = await axios.get(`https://ipinfo.io/${ipData.ip}/geo`);
+    const ipAddress =
+      req.query.ip ||
+      (await axios.get("https://api.ipify.org?format=json")).data.ip;
+    const geoResponse = await axios.get(`https://ipinfo.io/${ipAddress}/geo`);
     const geoData = geoResponse.data;
 
     if (geoData.loc) {
@@ -64,50 +63,7 @@ app.get("/api/ip", verifyToken, async (req, res) => {
       console.log("loc property is missing");
     }
 
-    // Check if IP history exists in database
-    const checkQuery = `SELECT * FROM history WHERE ip = ?`;
-    db.query(checkQuery, [geoData.ip], (err, result) => {
-      if (err) {
-        console.error("Error checking database for existing IP:", err);
-        return res
-          .status(500)
-          .json({ error: "Failed to check database for IP" });
-      }
-
-      if (result.length > 0) {
-        return res.json(result[0]);
-      } else {
-        // Insert new IP history with user_id
-        const insertQuery = `
-          INSERT INTO history (user_id, ip, hostname, city, region, country, latitude, longitude, org, postal, timezone)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const values = [
-          req.user.userId,
-          geoData.ip,
-          geoData.hostname,
-          geoData.city,
-          geoData.region,
-          geoData.country,
-          geoData.latitude,
-          geoData.longitude,
-          geoData.org,
-          geoData.postal,
-          geoData.timezone,
-        ];
-
-        db.query(insertQuery, values, (err, insertResult) => {
-          if (err) {
-            console.error("Error saving data to the database:", err);
-            return res
-              .status(500)
-              .json({ error: "Failed to save data to the database" });
-          }
-
-          res.json(geoData);
-        });
-      }
-    });
+    res.json(geoData);
   } catch (error) {
     console.error("Error fetching IP/geo information:", error);
     res.status(500).json({ error: "Failed to fetch IP/geo information" });
