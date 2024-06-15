@@ -25,7 +25,7 @@ const GeoLocation = () => {
     };
 
     fetchGeoInfo();
-  }, []); // Empty dependency array ensures useEffect runs once on component mount
+  }, []);
 
   return (
     <div>
