@@ -1,25 +1,53 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Login from "./components/login";
+import Home from "./components/home";
 
-function App() {
+const auth = {
+  isAuthenticated: false,
+  checkAuthStatus: () => {
+    return new Promise((resolve, reject) => {
+      const isLoggedIn = localStorage.getItem("token") !== null;
+      resolve(isLoggedIn);
+    });
+  },
+};
+
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const isAuthenticated = await auth.checkAuthStatus();
+        setIsLoggedIn(isAuthenticated);
+      } catch (error) {
+        console.error("Error during authentication check:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={isLoggedIn ? <Home /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/login"
+          element={!isLoggedIn ? <Login /> : <Navigate to="/" />}
+        />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
